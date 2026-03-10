@@ -11,14 +11,13 @@ sudo mkdir -p /etc/ssl/nginx /etc/nginx /etc/apt/keyrings
 sudo mv /tmp/nginx-repo.crt /etc/ssl/nginx/nginx-repo.crt
 sudo mv /tmp/nginx-repo.key /etc/ssl/nginx/nginx-repo.key
 sudo mv /tmp/license.jwt /etc/nginx/license.jwt
-sudo mv /tmp/license.key /etc/nginx/license.key
+
 
 sudo chown root:root /etc/ssl/nginx/nginx-repo.crt /etc/ssl/nginx/nginx-repo.key
 sudo chmod 600 /etc/ssl/nginx/nginx-repo.key
 sudo chmod 644 /etc/ssl/nginx/nginx-repo.crt
 
-sudo chown root:root /etc/nginx/license.jwt /etc/nginx/license.key
-sudo chmod 600 /etc/nginx/license.key
+
 sudo chmod 644 /etc/nginx/license.jwt
 
 sudo tee /etc/apt/apt.conf.d/90nginx >/dev/null <<'EOF'
