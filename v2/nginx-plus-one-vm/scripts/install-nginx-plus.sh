@@ -2,8 +2,7 @@
 set -euo pipefail
 
 if [[ -z "${DATA_PLANE_KEY:-}" ]]; then
-  echo "DATA_PLANE_KEY is required" >&2
-  exit 1
+  echo "⚠️  DATA_PLANE_KEY not set — skipping NGINX One Console agent registration"
 fi
 
 sudo mkdir -p /etc/ssl/nginx /etc/nginx /etc/apt/keyrings
@@ -69,7 +68,11 @@ sudo nginx -t
 sudo systemctl enable --now nginx
 sudo systemctl reload nginx
 
-curl https://agent.connect.nginx.com/nginx-agent/install | \
-  sudo DATA_PLANE_KEY="$DATA_PLANE_KEY" sh -s -- -y
-
-sudo systemctl enable --now nginx-agent
+if [[ -n "${DATA_PLANE_KEY:-}" ]]; then
+  curl https://agent.connect.nginx.com/nginx-agent/install | \
+    sudo DATA_PLANE_KEY="$DATA_PLANE_KEY" sh -s -- -y
+  sudo systemctl enable --now nginx-agent
+  echo "NGINX One Console agent installed and started."
+else
+  echo "Skipping NGINX One Console agent (DATA_PLANE_KEY not set)."
+fi

@@ -174,9 +174,8 @@ jobs:
           echo "TFC_WORKSPACE=nginx-plus-ec2-$repo_name" >> "$GITHUB_ENV"
           echo "TF_WORKSPACE=nginx-plus-ec2-$repo_name" >> "$GITHUB_ENV"
           echo "NAME_PREFIX=nginx-plus-$repo_name" >> "$GITHUB_ENV"
-          # FIX-03: restrict SSH to the GitHub Actions runner IP instead of 0.0.0.0/0
-          runner_ip="$(curl -fsSL https://api.ipify.org)"
-          echo "SSH_CIDR=${runner_ip}/32" >> "$GITHUB_ENV"
+          # NOTE: 0.0.0.0/0 needed — each job runs on a different runner with a different IP
+          echo "SSH_CIDR=0.0.0.0/0" >> "$GITHUB_ENV"
 
       - name: Ensure TFC workspace
         shell: bash
@@ -205,8 +204,7 @@ jobs:
           repo_name="${GITHUB_REPOSITORY##*/}"
           tf_workspace="nginx-plus-ec2-$repo_name"
           name_prefix="nginx-plus-$repo_name"
-          # FIX-03: derive runner IP at output time too (consistent with Set dynamic vars)
-          ssh_cidr="$(curl -fsSL https://api.ipify.org)/32"
+          ssh_cidr="0.0.0.0/0"
           echo "tf_workspace=$tf_workspace" >> "$GITHUB_OUTPUT"
           echo "name_prefix=$name_prefix" >> "$GITHUB_OUTPUT"
           echo "ssh_cidr=$ssh_cidr" >> "$GITHUB_OUTPUT"
@@ -325,15 +323,19 @@ jobs:
       - name: Wait for SSH
         run: |
           set -euo pipefail
-          for i in {1..30}; do
-            if ssh -o BatchMode=yes -o ConnectTimeout=5 \
+          IP="${{ needs.terraform.outputs.public_ip }}"
+          echo "Waiting for SSH on ${IP}..."
+          for i in {1..60}; do
+            echo "Attempt ${i}/60..."
+            if ssh -o BatchMode=yes -o ConnectTimeout=10 \
               -o StrictHostKeyChecking=accept-new \
-              ubuntu@${{ needs.terraform.outputs.public_ip }} "true"; then
+              ubuntu@${IP} "true" 2>&1; then
+              echo "SSH ready!"
               exit 0
             fi
             sleep 10
           done
-          echo "SSH not reachable after waiting." >&2
+          echo "SSH not reachable after 10 minutes." >&2
           exit 1
 
       - name: Upload NGINX secrets
@@ -635,15 +637,19 @@ jobs:
       - name: Wait for SSH
         run: |
           set -euo pipefail
-          for i in {1..30}; do
-            if ssh -o BatchMode=yes -o ConnectTimeout=5 \
+          IP="${{ needs.terraform.outputs.cine_public_ip }}"
+          echo "Waiting for SSH on ${IP}..."
+          for i in {1..60}; do
+            echo "Attempt ${i}/60..."
+            if ssh -o BatchMode=yes -o ConnectTimeout=10 \
               -o StrictHostKeyChecking=accept-new \
-              ubuntu@${{ needs.terraform.outputs.cine_public_ip }} "true"; then
+              ubuntu@${IP} "true" 2>&1; then
+              echo "SSH ready!"
               exit 0
             fi
             sleep 10
           done
-          echo "SSH not reachable after waiting." >&2
+          echo "SSH not reachable after 10 minutes." >&2
           exit 1
 
       - name: Install Node.js 20
