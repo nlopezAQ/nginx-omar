@@ -81,6 +81,23 @@ sudo systemctl reload nginx
 if [[ -n "${DATA_PLANE_KEY:-}" ]]; then
   curl https://agent.connect.nginx.com/nginx-agent/install | \
     sudo DATA_PLANE_KEY="$DATA_PLANE_KEY" sh -s -- -y
+
+  # Point agent to the NGINX Plus API so NGINX One Console receives metrics
+  sudo mkdir -p /etc/nginx-agent
+  sudo tee /etc/nginx-agent/nginx-agent.conf >/dev/null <<'AGENTEOF'
+log:
+  level: info
+  path: /var/log/nginx-agent/
+nginx:
+  api_url: http://127.0.0.1:8080/api
+server:
+  host: agent.connect.nginx.com
+  grpcPort: 443
+tls:
+  enable: true
+  skip_verify: false
+AGENTEOF
+
   sudo systemctl enable --now nginx-agent
   echo "NGINX One Console agent installed and started."
 else
